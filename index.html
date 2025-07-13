@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gkamara-English to Kiswahili-dictionary</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Online Dictionary</h1>
+  <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()">
+  <table id="dictionaryTable"></table>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetrock/1.0.0/dist/sheetrock.min.js"></script>
+  <script>
+    // Replace with your Google Sheet's published URL
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSn4lQMRF9BeKFt0_16e8eVd2SsrmcNRKgbsHUHMoXIt-CPq69PZdQPxtGOmlGSMcyHlrlv7P1lNFUw/pubhtml';
+
+    // Load all data initially
+    function loadData(query = '') {
+      $('#dictionaryTable').sheetrock({
+        url: sheetURL,
+        query: query || 'select B,C', // Assumes column A is Word, B is Definition
+        reset: true,
+        callback: function (error, options, response) {
+          if (error) {
+            console.error('Error loading sheet:', error);
+            $('#dictionaryTable').html('<tr><td colspan="2">Error loading data. Check sheet URL or permissions.</td></tr>');
+          }
+        }
+      });
+    }
+
+    // Search function
+    function searchWords() {
+      const searchTerm = $('#searchInput').val().toLowerCase();
+      if (searchTerm) {
+        // Query Google Sheet for matching words
+        loadData(`select B,C where lower(C) contains '${searchTerm}'`);
+      } else {
+        // Load all data if search is empty
+        loadData();
+      }
+    }
+
+    // Initial load
+    $(document).ready(function() {
+      loadData();
+    });
+  </script>
+</body>
+</html>
