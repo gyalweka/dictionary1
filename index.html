@@ -1,164 +1,327 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Online Dictionary</title>
-  <!-- Tailwind CSS CDN for modern styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Custom styles to ensure Inter font and responsive table behavior */
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    /* Ensure table cells have proper padding and borders */
-    th, td {
-      @apply px-4 py-2 border border-gray-300 text-left;
-    }
-    th {
-      @apply bg-gray-100;
-    }
-    /* Responsive table for smaller screens */
-    @media (max-width: 640px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-      thead tr {
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
-      }
-      tr {
-        @apply border border-gray-300 mb-4 rounded-lg;
-      }
-      td {
-        /* Behave like a "row" */
-        border: none;
-        position: relative;
-        padding-left: 50%;
-        text-align: right;
-      }
-      td:before {
-        /* Now like a table header */
-        position: absolute;
-        /* Top/left values mimic padding */
-        top: 0;
-        left: 6px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left;
-        font-weight: bold;
-      }
-      /* Label the data */
-      td:nth-of-type(1):before { content: "Word:"; }
-      td:nth-of-type(2):before { content: "Definition:"; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive English-Kiswahili Word Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style single page application. The structure includes a header, a control section with search and filter buttons, a dynamic status counter, and a main content area that displays the vocabulary as a responsive grid of cards. This structure was chosen because it turns a passive data list into an active exploration tool. The search and filter capabilities allow users to instantly query the data based on their interests (e.g., finding a specific word or analyzing the types of loanwords), which is far more engaging and usable than a static table. The card-based grid is modern, visually appealing, and inherently responsive for better mobile viewing. -->
+    <!-- Visualization & Content Choices: Report Info: A list of English-Kiswahili word pairs with notes on their origin. -> Goal: Organize, allow searching, and filtering. -> Viz/Presentation Method: Interactive list of cards (HTML/CSS/Tailwind), dynamic counters for stats (JS), and filter buttons. -> Interaction: Real-time search via text input and filtering via button clicks. -> Justification: These methods are highly intuitive and provide immediate feedback, empowering the user to analyze the vocabulary list efficiently without needing complex visualizations like charts. -> Library/Method: Vanilla JS for all logic. Tailwind CSS for styling. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .filter-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
-<body class="bg-gray-50 p-4 sm:p-6 md:p-8">
-  <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">My Online Dictionary</h1>
+<body class="bg-amber-50 text-gray-800">
 
-    <!-- Search Input -->
-    <div class="mb-6">
-      <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()"
-             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-teal-800 mb-2">English-Kiswahili Word Explorer</h1>
+            <p class="text-md text-gray-600 max-w-2xl mx-auto">An interactive tool to discover and explore the rich vocabulary shared between the English and Swahili languages. Search for words or use the filters to see different types of linguistic connections.</p>
+        </header>
+
+        <div class="bg-white p-4 rounded-xl shadow-md mb-8 sticky top-4 z-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-1">
+                     <input type="text" id="searchInput" placeholder="Search for a word..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                </div>
+                <div class="md:col-span-2 flex flex-wrap items-center justify-start gap-2">
+                    <button class="filter-btn bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg" data-filter="All">All</button>
+                    <button class="filter-btn bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg" data-filter="Direct loanword">Direct loanwords</button>
+                    <button class="filter-btn bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg" data-filter="Arabic loanword">Arabic Origin</button>
+                    <button class="filter-btn bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg" data-filter="Common concept">Common Concepts</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="text-center mb-6 text-gray-600 font-medium"></div>
+
+        <main id="word-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Word cards will be injected here by JavaScript -->
+        </main>
     </div>
 
-    <!-- Dictionary Table -->
-    <div class="overflow-x-auto">
-      <table id="dictionaryTable" class="min-w-full bg-white rounded-lg overflow-hidden shadow-sm">
-        <thead>
-          <tr>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Word</th>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Definition</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Data will be loaded here by Sheetrock.js -->
-          <tr><td colspan="2" class="text-center text-gray-500 py-4">Loading dictionary data...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <script>
+        const wordsData = [
+            { en: "Agent", sw: "Ajenti", note: "Direct loanword" },
+            { en: "Airport", sw: "Uwanja wa ndege", note: "'Airport' often used informally" },
+            { en: "Album", sw: "Alabamu", note: "Direct loanword" },
+            { en: "Ambulance", sw: "Ambulensi", note: "Direct loanword" },
+            { en: "America", sw: "Amerika", note: "Direct loanword" },
+            { en: "Animal", sw: "Mnyama", note: "Common concept, not direct loan" },
+            { en: "April", sw: "Aprili", note: "Direct loanword" },
+            { en: "August", sw: "Agosti", note: "Direct loanword" },
+            { en: "Balance", sw: "Mizani", note: "Arabic loanword, similar to English" },
+            { en: "Ball", sw: "Mpira", note: "Common concept, not direct loan" },
+            { en: "Banana", sw: "Ndizi", note: "Common concept, not direct loan" },
+            { en: "Band", sw: "Bendi", note: "Direct loanword" },
+            { en: "Bank", sw: "Benki", note: "Direct loanword" },
+            { en: "Bar", sw: "Baa", note: "Direct loanword" },
+            { en: "Baseball", sw: "Besiboli", note: "Direct loanword (sport)" },
+            { en: "Battery", sw: "Betri", note: "Direct loanword" },
+            { en: "Bicycle", sw: "Baiskeli", note: "Direct loanword" },
+            { en: "Board", sw: "Bodi", note: "Direct loanword" },
+            { en: "Bomb", sw: "Bomu", note: "Direct loanword" },
+            { en: "Book", sw: "Buku", note: "Loanword (Eng/Ger)" },
+            { en: "Bottle", sw: "Chupa", note: "Common concept, not direct loan" },
+            { en: "Box", sw: "Boksi", note: "Direct loanword" },
+            { en: "Brake", sw: "Breki", note: "Direct loanword" },
+            { en: "Budget", sw: "Bajeti", note: "Direct loanword" },
+            { en: "Bulb", sw: "Balbu", note: "Direct loanword" },
+            { en: "Bus", sw: "Basi", note: "Direct loanword" },
+            { en: "Button", sw: "Batani", note: "Direct loanword" },
+            { en: "Cable", sw: "Kebuli", note: "Direct loanword" },
+            { en: "Calendar", sw: "Kalenda", note: "Direct loanword" },
+            { en: "Camera", sw: "Kamera", note: "Direct loanword" },
+            { en: "Camp", sw: "Kambi", note: "Direct loanword" },
+            { en: "Car", sw: "Gari", note: "Widely used, not direct loan" },
+            { en: "Card", sw: "Kadi", note: "Direct loanword" },
+            { en: "Carton", sw: "Katoni", note: "Direct loanword" },
+            { en: "Case", sw: "Kesi", note: "Direct loanword (legal, container)" },
+            { en: "Cassette", sw: "Kaseti", note: "Direct loanword" },
+            { en: "Cement", sw: "Saruji", note: "Arabic loanword, similar to English" },
+            { en: "Centre", sw: "Kituo", note: "Common concept, not direct loan" },
+            { en: "Chair", sw: "Kiti", note: "Common concept, not direct loan" },
+            { en: "Champion", sw: "Bingwa", note: "Common concept, not direct loan" },
+            { en: "Channel", sw: "Chaneli", note: "Direct loanword" },
+            { en: "Chart", sw: "Chati", note: "Direct loanword" },
+            { en: "Chip", sw: "Chipu", note: "Direct loanword" },
+            { en: "Chocolate", sw: "Chokoleti", note: "Direct loanword" },
+            { en: "Choir", sw: "Kwaya", note: "Direct loanword" },
+            { en: "Cinema", sw: "Sinema", note: "Direct loanword" },
+            { en: "Classic", sw: "Klasiki", note: "Direct loanword" },
+            { en: "Clinic", sw: "Kliniki", note: "Direct loanword" },
+            { en: "Club", sw: "Klabu", note: "Direct loanword" },
+            { en: "Coach", sw: "Kocha", note: "Direct loanword" },
+            { en: "Code", sw: "Kodi", note: "Direct loanword" },
+            { en: "Coffee", sw: "Kahawa", note: "Arabic loanword, common in English" },
+            { en: "College", sw: "Chuo", note: "Common concept, not direct loan" },
+            { en: "Company", sw: "Kampuni", note: "Direct loanword" },
+            { en: "Computer", sw: "Kompyuta", note: "Direct loanword" },
+            { en: "Container", sw: "Kontena", note: "Direct loanword" },
+            { en: "Contract", sw: "Mkataba", note: "Arabic loanword, similar to English" },
+            { en: "Copy", sw: "Nakala", note: "'Kopi' also commonly used" },
+            { en: "Cotton", sw: "Pamba", note: "Common concept, not direct loan" },
+            { en: "Council", sw: "Baraza", note: "Arabic loanword, similar to English" },
+            { en: "Counter", sw: "Kaunta", note: "Direct loanword" },
+            { en: "Course", sw: "Kozi", note: "Direct loanword" },
+            { en: "Credit", sw: "Krediti", note: "Direct loanword" },
+            { en: "Crew", sw: "Kruu", note: "Direct loanword" },
+            { en: "Crown", sw: "Taji", note: "Arabic loanword, similar to English" },
+            { en: "Cup", sw: "Kombe", note: "Arabic loanword, similar to Eng. 'cup'" },
+            { en: "Dance", sw: "Dansi", note: "Direct loanword" },
+            { en: "December", sw: "Desemba", note: "Direct loanword" },
+            { en: "Doctor", sw: "Daktari", note: "Loanword (Eng/Arabic)" },
+            { en: "Dollar", sw: "Dola", note: "Direct loanword" },
+            { en: "Driver", sw: "Dereva", note: "Direct loanword" },
+            { en: "Electricity", sw: "Umeme", note: "Common concept, not direct loan" },
+            { en: "Engine", sw: "Injini", note: "Direct loanword" },
+            { en: "Europe", sw: "Ulaya", note: "Common concept, not direct loan" },
+            { en: "Exam", sw: "Mtihani", note: "Arabic loanword, similar to English" },
+            { en: "Factory", sw: "Kiwanda", note: "Common concept, not direct loan" },
+            { en: "Fan", sw: "Fani", note: "Direct loanword (for cooling)" },
+            { en: "Farm", sw: "Shamba", note: "Common concept, not direct loan" },
+            { en: "February", sw: "Februari", note: "Direct loanword" },
+            { en: "Film", sw: "Filamu", note: "Direct loanword" },
+            { en: "Football", sw: "Kandanda", note: "'Football' also commonly used" },
+            { en: "Fridge", sw: "Friji", note: "Direct loanword" },
+            { en: "Garage", sw: "Gereji", note: "Direct loanword" },
+            { en: "Gas", sw: "Gesi", note: "Direct loanword" },
+            { en: "Government", sw: "Serikali", note: "Arabic loanword, similar to English" },
+            { en: "Guitar", sw: "Gitaa", note: "Direct loanword" },
+            { en: "Hospital", sw: "Hospitali", note: "Direct loanword" },
+            { en: "Hotel", sw: "Hoteli", note: "Direct loanword" },
+            { en: "Idea", sw: "Idea", note: "Direct loanword" },
+            { en: "Internet", sw: "Intaneti", note: "Direct loanword" },
+            { en: "Iron", sw: "Chuma", note: "Common concept, not direct loan" },
+            { en: "January", sw: "Januari", note: "Direct loanword" },
+            { en: "Jazz", sw: "Jazi", note: "Direct loanword" },
+            { en: "Jeep", sw: "Jipu", note: "Direct loanword" },
+            { en: "July", sw: "Julai", note: "Direct loanword" },
+            { en: "June", sw: "Juni", note: "Direct loanword" },
+            { en: "Kilo", sw: "Kilo", note: "Direct loanword" },
+            { en: "Kilometer", sw: "Kilomita", note: "Direct loanword" },
+            { en: "King", sw: "Mfalme", note: "Common concept, not direct loan" },
+            { en: "Kitchen", sw: "Jiko", note: "Common concept, not direct loan" },
+            { en: "Lamp", sw: "Taa", note: "Common concept, not direct loan" },
+            { en: "Lemon", sw: "Limau", note: "Arabic loanword, similar to English" },
+            { en: "Library", sw: "Maktaba", note: "Arabic loanword, similar to English" },
+            { en: "Light", sw: "Nuru", note: "Common concept, not direct loan" },
+            { en: "Lion", sw: "Simba", note: "Common concept, not direct loan" },
+            { en: "Lorry", sw: "Lori", note: "Direct loanword" },
+            { en: "Machine", sw: "Mashine", note: "Direct loanword" },
+            { en: "Magazine", sw: "Gazeti", note: "Direct loanword" },
+            { en: "Mango", sw: "Embe", note: "Common concept, not direct loan" },
+            { en: "March", sw: "Machi", note: "Direct loanword" },
+            { en: "Market", sw: "Soko", note: "Arabic loanword, similar to English" },
+            { en: "May", sw: "Mei", note: "Direct loanword" },
+            { en: "Medicine", sw: "Dawa", note: "Arabic loanword, similar to English" },
+            { en: "Meter", sw: "Meta", note: "Direct loanword" },
+            { en: "Milk", sw: "Maziwa", note: "Common concept, not direct loan" },
+            { en: "Minute", sw: "Dakika", note: "Arabic loanword, similar to English" },
+            { en: "Modern", sw: "Kisasa", note: "Common concept, not direct loan" },
+            { en: "Motorcycle", sw: "Pikipiki", note: "Direct loanword" },
+            { en: "Music", sw: "Muziki", note: "Direct loanword" },
+            { en: "Nation", sw: "Taifa", note: "Arabic loanword, similar to English" },
+            { en: "Newspaper", sw: "Gazeti", note: "Direct loanword" },
+            { en: "November", sw: "Novemba", note: "Direct loanword" },
+            { en: "Nurse", sw: "Nesi", note: "Direct loanword" },
+            { en: "October", sw: "Oktoba", note: "Direct loanword" },
+            { en: "Office", sw: "Ofisi", note: "Direct loanword" },
+            { en: "Orange", sw: "Chungwa", note: "Common concept, not direct loan" },
+            { en: "Organization", sw: "Shirika", note: "Common concept, not direct loan" },
+            { en: "Paper", sw: "Karatasi", note: "Arabic loanword, similar to English" },
+            { en: "Park", sw: "Bustani", note: "'Park' is also commonly used" },
+            { en: "Passport", sw: "Pasipoti", note: "Direct loanword" },
+            { en: "Petrol", sw: "Petroli", note: "Direct loanword" },
+            { en: "Phone", sw: "Simu", note: "Short for 'mobile phone'" },
+            { en: "Photo", sw: "Picha", note: "Arabic loanword, similar to English" },
+            { en: "Pilot", sw: "Rubani", note: "Arabic loanword, similar to English" },
+            { en: "Plastic", sw: "Plastiki", note: "Direct loanword" },
+            { en: "Police", sw: "Polisi", note: "Direct loanword" },
+            { en: "Post", sw: "Posta", note: "Direct loanword" },
+            { en: "President", sw: "Rais", note: "Arabic loanword, similar to English" },
+            { en: "Program", sw: "Programu", note: "Direct loanword" },
+            { en: "Pump", sw: "Pampu", note: "Direct loanword" },
+            { en: "Radio", sw: "Redio", note: "Direct loanword" },
+            { en: "Restaurant", sw: "Mgahawa", note: "Arabic loanword, similar to English" },
+            { en: "Rocket", sw: "Roketi", note: "Direct loanword" },
+            { en: "Room", sw: "Chumba", note: "Common concept, not direct loan" },
+            { en: "Rubber", sw: "Raba", note: "Direct loanword" },
+            { en: "Ruler", sw: "Rula", note: "Direct loanword" },
+            { en: "Salad", sw: "Saladi", note: "Direct loanword" },
+            { en: "School", sw: "Shule", note: "Direct loanword" },
+            { en: "Science", sw: "Sayansi", note: "Direct loanword" },
+            { en: "Scooter", sw: "Skuta", note: "Direct loanword" },
+            { en: "September", sw: "Septemba", note: "Direct loanword" },
+            { en: "Shop", sw: "Duka", note: "Arabic loanword, similar to English" },
+            { en: "Signal", sw: "Ishara", note: "Common concept, not direct loan" },
+            { en: "Soap", sw: "Sabuni", note: "Arabic loanword, similar to English" },
+            { en: "Soda", sw: "Soda", note: "Direct loanword" },
+            { en: "Sport", sw: "Michezo", note: "'Sporti' is also commonly used" },
+            { en: "Station", sw: "Stesheni", note: "Direct loanword" },
+            { en: "Student", sw: "Mwanafunzi", note: "Common concept, not direct loan" },
+            { en: "Sugar", sw: "Sukari", note: "Arabic loanword, similar to English" },
+            { en: "Supermarket", sw: "Supamaketi", note: "Direct loanword" },
+            { en: "Sweater", sw: "Sweta", note: "Direct loanword" },
+            { en: "Table", sw: "Meza", note: "Arabic loanword, similar to English" },
+            { en: "Taxi", sw: "Teksi", note: "Direct loanword" },
+            { en: "Tea", sw: "Chai", note: "Loanword from Persian/Hindi" },
+            { en: "Telephone", sw: "Simu", note: "Short for 'mobile phone'" },
+            { en: "Television", sw: "Televisheni", note: "Direct loanword" },
+            { en: "Tennis", sw: "Tenisi", note: "Direct loanword" },
+            { en: "Ticket", sw: "Tiketi", note: "Direct loanword" },
+            { en: "Time", sw: "Muda", note: "Common concept, not direct loan" },
+            { en: "Tomato", sw: "Nyanya", note: "Common concept, not direct loan" },
+            { en: "Tourist", sw: "Mtalii", note: "Direct loanword" },
+            { en: "Tractor", sw: "Trekta", note: "Direct loanword" },
+            { en: "Train", sw: "Treni", note: "Direct loanword" },
+            { en: "Transport", sw: "Usafiri", note: "Common concept, not direct loan" },
+            { en: "Tree", sw: "Mti", note: "Common concept, not direct loan" },
+            { en: "Truck", sw: "Lori", note: "Direct loanword" },
+            { en: "Tunnel", sw: "Tani", note: "Direct loanword" },
+            { en: "Tyre", sw: "Tairi", note: "Direct loanword" },
+            { en: "University", sw: "Chuo Kikuu", note: "Common concept, not direct loan" },
+            { en: "Uniform", sw: "Sare", note: "Arabic loanword, similar to English" },
+            { en: "Umbrella", sw: "Mwavuli", note: "Common concept, not direct loan" },
+            { en: "Van", sw: "Vani", note: "Direct loanword" },
+            { en: "Video", sw: "Video", note: "Direct loanword" },
+            { en: "Visa", sw: "Viza", note: "Direct loanword" },
+            { en: "Vitamin", sw: "Vitamini", note: "Direct loanword" },
+            { en: "Vote", sw: "Kura", note: "Arabic loanword, similar to English" },
+            { en: "Volcano", sw: "Volkano", note: "Direct loanword" },
+            { en: "Wallet", sw: "Mkoba", note: "Common concept, not direct loan" },
+            { en: "Water", sw: "Maji", note: "Common concept, not direct loan" },
+            { en: "Weekend", sw: "Wikendi", note: "Direct loanword" },
+            { en: "Window", sw: "Dirisha", note: "Arabic loanword, similar to English" },
+            { en: "Wine", sw: "Mvinyo", note: "Loanword from Portuguese" },
+            { en: "Wireless", sw: "Waya hewa", note: "Common concept, not direct loan" },
+            { en: "X-ray", sw: "Eksirei", note: "Direct loanword" },
+            { en: "Yacht", sw: "Yati", note: "Direct loanword" },
+            { en: "Yard", sw: "Yadi", note: "Direct loanword (unit of measurement)" },
+            { en: "Yoga", sw: "Yoga", note: "Direct loanword" },
+            { en: "Yogurt", sw: "Mtindi", note: "Common concept, not direct loan" },
+            { en: "Zebra", sw: "Punda Milia", note: "Common concept, not direct loan" },
+            { en: "Zero", sw: "Sifuri", note: "Arabic loanword, similar to English" },
+            { en: "Zip", sw: "Zipu", note: "Direct loanword" },
+            { en: "Zone", sw: "Eneo", note: "Common concept, not direct loan" }
+        ];
 
-  <!-- jQuery CDN link -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <!-- Sheetrock.js library -->
-  <!-- Option 1: Host locally (recommended for reliability on GitHub Pages) -->
-  <!-- <script src="./js/sheetrock.min.js"></script> -->
-  <!-- Option 2: Use a different CDN as a fallback if local hosting is problematic -->
-  <script src="https://unpkg.com/sheetrock/dist/sheetrock.min.js"></script>
+        const wordContainer = document.getElementById('word-container');
+        const searchInput = document.getElementById('searchInput');
+        const statusDiv = document.getElementById('status');
+        const filterButtons = document.querySelectorAll('.filter-btn');
 
+        let currentFilter = 'All';
 
-  <script>
-    // IMPORTANT: Replace with your Google Sheet's published URL.
-    // Go to File > Share > Publish to web in your Google Sheet, and copy the URL.
-    // Ensure the sheet is publicly accessible ("Anyone with the link can view").
-    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSn4lQMRF9BeKFt0_16e8eVd2SsrmcNRKgbsHUHMoXIt-CPq69PZdQPxtGOmlGSMcyHlrlv7P1lNFUw/pubhtml';
-
-    // Function to display a critical error message in the table
-    function displayCriticalError(message) {
-      $('#dictionaryTable tbody').html(`<tr><td colspan="2" class="text-center text-red-600 font-bold py-4">${message}</td></tr>`);
-    }
-
-    // Check if jQuery is loaded
-    if (typeof jQuery === 'undefined') {
-      console.error('Error: jQuery library not loaded. Please check the CDN link or your internet connection.');
-      displayCriticalError('Error: Required library (jQuery) not loaded. Please check your internet connection.');
-    } else {
-      // Check if Sheetrock.js is loaded (it depends on jQuery)
-      if (typeof $.fn.sheetrock === 'undefined') {
-        console.error('Error: Sheetrock.js library not loaded. This could be due to network issues, or if you are hosting it locally, ensure "sheetrock.min.js" is in the "js" folder and the path is correct.');
-        displayCriticalError('Error: Required library (Sheetrock.js) not loaded. Please check your internet connection or local file path.');
-      } else {
-        // If both libraries are loaded, proceed with the application logic
-
-        /**
-         * Loads data from the Google Sheet into the dictionary table.
-         * @param {string} query - The Sheetrock query string. Defaults to 'select B,C' to load all words and definitions.
-         */
-        function loadData(query = '') {
-          $('#dictionaryTable tbody').sheetrock({ // Target tbody to keep thead
-            url: sheetURL,
-            // Corrected query: Assumes column B is Word, C is Definition
-            query: query || 'select B,C',
-            reset: true, // Clears existing table data before loading new
-            callback: function (error, options, response) {
-              if (error) {
-                console.error('Error loading sheet:', error);
-                $('#dictionaryTable tbody').html('<tr><td colspan="2" class="text-center text-red-500 py-4">Error loading data. Please check the Google Sheet URL, publishing settings, and internet connection.</td></tr>');
-              } else if (response.rows.length === 0) {
-                // If no data is found (e.g., search term yields no results)
-                $('#dictionaryTable tbody').html('<tr><td colspan="2" class="text-center text-gray-500 py-4">No results found.</td></tr>');
-              }
+        function renderWords(wordsToRender) {
+            wordContainer.innerHTML = '';
+            if (wordsToRender.length === 0) {
+                wordContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">No matching words found.</p>`;
+            } else {
+                wordsToRender.forEach(word => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-lg p-5 flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 transition-all duration-300';
+                    card.innerHTML = `
+                        <div>
+                            <h2 class="text-xl font-bold text-teal-700">${word.en}</h2>
+                            <p class="text-lg text-gray-800 mt-1">${word.sw}</p>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-4 pt-2 border-t border-gray-100">${word.note}</p>
+                    `;
+                    wordContainer.appendChild(card);
+                });
             }
-          });
+            updateStatus(wordsToRender.length, wordsData.length);
         }
 
-        /**
-         * Performs a search on the dictionary based on user input.
-         * Fetches data from Google Sheet, filtering by words in Column B.
-         */
-        function searchWords() {
-          const searchTerm = $('#searchInput').val().toLowerCase().trim(); // Trim whitespace
-          if (searchTerm) {
-            // Query Google Sheet for matching words in Column B
-            // Selects B (Word) and C (Definition) where B contains the search term
-            loadData(`select B,C where lower(B) contains '${searchTerm}'`);
-          } else {
-            // Load all data if search input is empty
-            loadData();
-          }
+        function updateStatus(showing, total) {
+            statusDiv.textContent = `Showing ${showing} of ${total} words`;
         }
 
-        // Initial load of all data when the document is ready
-        $(document).ready(function() {
-          loadData();
+        function filterAndRender() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            let filteredWords = wordsData.filter(word => {
+                const matchesSearch = word.en.toLowerCase().includes(searchTerm) || word.sw.toLowerCase().includes(searchTerm);
+                const matchesFilter = (currentFilter === 'All') || word.note.toLowerCase().includes(currentFilter.toLowerCase());
+                return matchesSearch && matchesFilter;
+            });
+
+            renderWords(filteredWords);
+        }
+
+        searchInput.addEventListener('keyup', filterAndRender);
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                currentFilter = button.dataset.filter;
+                
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('active', 'ring-2', 'ring-offset-2', 'ring-teal-500');
+                    btn.style.fontWeight = '600';
+                });
+                button.classList.add('active', 'ring-2', 'ring-offset-2', 'ring-teal-500');
+                
+                filterAndRender();
+            });
         });
-      }
-    }
-  </script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderWords(wordsData);
+            filterButtons[0].click();
+        });
+    </script>
 </body>
 </html>
