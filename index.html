@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Online Dictionary</title>
+  <title>gkamara-English to Kiswahili-dictionary</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -46,7 +46,7 @@
     function loadData(query = '') {
       $('#dictionaryTable').sheetrock({
         url: sheetURL,
-        query: query || 'select A,B', // Assumes column A is Word, B is Definition
+        query: query || 'select B,C', // Assumes column A is Word, B is Definition
         reset: true,
         callback: function (error, options, response) {
           if (error) {
@@ -62,7 +62,7 @@
       const searchTerm = $('#searchInput').val().toLowerCase();
       if (searchTerm) {
         // Query Google Sheet for matching words
-        loadData(`select A,B where lower(A) contains '${searchTerm}'`);
+        loadData(`select B,C where lower(C) contains '${searchTerm}'`);
       } else {
         // Load all data if search is empty
         loadData();
