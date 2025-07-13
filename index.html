@@ -4,101 +4,161 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Online Dictionary</title>
+  <!-- Tailwind CSS CDN for modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Custom styles to ensure Inter font and responsive table behavior */
     body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
+      font-family: 'Inter', sans-serif;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    /* Ensure table cells have proper padding and borders */
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
+      @apply px-4 py-2 border border-gray-300 text-left;
     }
     th {
-      background-color: #f2f2f2;
+      @apply bg-gray-100;
     }
-    #errorMessage {
-      color: red;
-      margin-top: 10px;
-    }
-    #loadingMessage {
-      color: blue;
-      margin-top: 10px;
-    }
-    #rawData {
-      margin-top: 20px;
-      white-space: pre-wrap;
+    /* Responsive table for smaller screens */
+    @media (max-width: 640px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+      tr {
+        @apply border border-gray-300 mb-4 rounded-lg;
+      }
+      td {
+        /* Behave like a "row" */
+        border: none;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+      }
+      td:before {
+        /* Now like a table header */
+        position: absolute;
+        /* Top/left values mimic padding */
+        top: 0;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+      }
+      /* Label the data */
+      td:nth-of-type(1):before { content: "Word:"; }
+      td:nth-of-type(2):before { content: "Definition:"; }
     }
   </style>
 </head>
-<body>
-  <h1>My Online Dictionary</h1>
-  <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()">
-  <div id="loadingMessage">Loading data...</div>
-  <table id="dictionaryTable"></table>
-  <div id="errorMessage"></div>
-  <div id="rawData"></div>
+<body class="bg-gray-50 p-4 sm:p-6 md:p-8">
+  <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">My Online Dictionary</h1>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetrock/1.0.0/dist/sheetrock.min.js"></script>
+    <!-- Search Input -->
+    <div class="mb-6">
+      <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()"
+             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+    </div>
+
+    <!-- Dictionary Table -->
+    <div class="overflow-x-auto">
+      <table id="dictionaryTable" class="min-w-full bg-white rounded-lg overflow-hidden shadow-sm">
+        <thead>
+          <tr>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Word</th>
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Definition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be loaded here by Sheetrock.js -->
+          <tr><td colspan="2" class="text-center text-gray-500 py-4">Loading dictionary data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- jQuery CDN link -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <!-- Sheetrock.js library -->
+  <!-- Option 1: Host locally (recommended for reliability on GitHub Pages) -->
+  <!-- <script src="./js/sheetrock.min.js"></script> -->
+  <!-- Option 2: Use a different CDN as a fallback if local hosting is problematic -->
+  <script src="https://unpkg.com/sheetrock/dist/sheetrock.min.js"></script>
+
+
   <script>
-    // Replace with your Google Sheet's published URL
+    // IMPORTANT: Replace with your Google Sheet's published URL.
+    // Go to File > Share > Publish to web in your Google Sheet, and copy the URL.
+    // Ensure the sheet is publicly accessible ("Anyone with the link can view").
     const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSn4lQMRF9BeKFt0_16e8eVd2SsrmcNRKgbsHUHMoXIt-CPq69PZdQPxtGOmlGSMcyHlrlv7P1lNFUw/pubhtml';
 
-    // Load data from Google Sheet
-    function loadData(query = '') {
-      console.log('Attempting to load data with query:', query);
-      $('#loadingMessage').text('Loading data...');
-      $('#errorMessage').text('');
-      $('#rawData').text('');
+    // Function to display a critical error message in the table
+    function displayCriticalError(message) {
+      $('#dictionaryTable tbody').html(`<tr><td colspan="2" class="text-center text-red-600 font-bold py-4">${message}</td></tr>`);
+    }
 
-      $('#dictionaryTable').sheetrock({
-        url: sheetURL,
-        query: query || 'select B,C', // Adjusted for Word (B) and Definition (C)
-        reset: true,
-        callback: function (error, options, response) {
-          $('#loadingMessage').text('');
-          if (error) {
-            console.error('Sheetrock error:', error);
-            $('#errorMessage').text('Error loading data. Check the spreadsheet URL, permissions, or console for details.');
+    // Check if jQuery is loaded
+    if (typeof jQuery === 'undefined') {
+      console.error('Error: jQuery library not loaded. Please check the CDN link or your internet connection.');
+      displayCriticalError('Error: Required library (jQuery) not loaded. Please check your internet connection.');
+    } else {
+      // Check if Sheetrock.js is loaded (it depends on jQuery)
+      if (typeof $.fn.sheetrock === 'undefined') {
+        console.error('Error: Sheetrock.js library not loaded. This could be due to network issues, or if you are hosting it locally, ensure "sheetrock.min.js" is in the "js" folder and the path is correct.');
+        displayCriticalError('Error: Required library (Sheetrock.js) not loaded. Please check your internet connection or local file path.');
+      } else {
+        // If both libraries are loaded, proceed with the application logic
+
+        /**
+         * Loads data from the Google Sheet into the dictionary table.
+         * @param {string} query - The Sheetrock query string. Defaults to 'select B,C' to load all words and definitions.
+         */
+        function loadData(query = '') {
+          $('#dictionaryTable tbody').sheetrock({ // Target tbody to keep thead
+            url: sheetURL,
+            // Corrected query: Assumes column B is Word, C is Definition
+            query: query || 'select B,C',
+            reset: true, // Clears existing table data before loading new
+            callback: function (error, options, response) {
+              if (error) {
+                console.error('Error loading sheet:', error);
+                $('#dictionaryTable tbody').html('<tr><td colspan="2" class="text-center text-red-500 py-4">Error loading data. Please check the Google Sheet URL, publishing settings, and internet connection.</td></tr>');
+              } else if (response.rows.length === 0) {
+                // If no data is found (e.g., search term yields no results)
+                $('#dictionaryTable tbody').html('<tr><td colspan="2" class="text-center text-gray-500 py-4">No results found.</td></tr>');
+              }
+            }
+          });
+        }
+
+        /**
+         * Performs a search on the dictionary based on user input.
+         * Fetches data from Google Sheet, filtering by words in Column B.
+         */
+        function searchWords() {
+          const searchTerm = $('#searchInput').val().toLowerCase().trim(); // Trim whitespace
+          if (searchTerm) {
+            // Query Google Sheet for matching words in Column B
+            // Selects B (Word) and C (Definition) where B contains the search term
+            loadData(`select B,C where lower(B) contains '${searchTerm}'`);
           } else {
-            console.log('Data loaded successfully:', response);
-            $('#errorMessage').text('');
-            // Display raw data for debugging
-            $('#rawData').text('Raw data (for debugging): ' + JSON.stringify(response, null, 2));
+            // Load all data if search input is empty
+            loadData();
           }
         }
-      });
-    }
 
-    // Search function
-    function searchWords() {
-      const searchTerm = $('#searchInput').val().toLowerCase().trim();
-      console.log('Searching for:', searchTerm);
-      if (searchTerm) {
-        loadData(`select B,C where lower(B) contains '${searchTerm}'`);
-      } else {
-        loadData();
+        // Initial load of all data when the document is ready
+        $(document).ready(function() {
+          loadData();
+        });
       }
     }
-
-    // Initial load
-    $(document).ready(function() {
-      console.log('Initializing dictionary...');
-      loadData();
-    });
   </script>
 </body>
 </html>
