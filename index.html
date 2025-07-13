@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>gkamara-English to Kiswahili-dictionary</title>
+  <title>My Online Dictionary</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -29,29 +29,55 @@
     th {
       background-color: #f2f2f2;
     }
+    #errorMessage {
+      color: red;
+      margin-top: 10px;
+    }
+    #loadingMessage {
+      color: blue;
+      margin-top: 10px;
+    }
+    #rawData {
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <h1>English to Kiswahili</h1>
+  <h1>My Online Dictionary</h1>
   <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()">
+  <div id="loadingMessage">Loading data...</div>
   <table id="dictionaryTable"></table>
+  <div id="errorMessage"></div>
+  <div id="rawData"></div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetrock/1.0.0/dist/sheetrock.min.js"></script>
   <script>
     // Replace with your Google Sheet's published URL
-    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSn4lQMRF9BeKFt0_16e8eVd2SsrmcNRKgbsHUHMoXIt-CPq69PZdQPxtGOmlGSMcyHlrlv7P1lNFUw/pubhtml';
+    const sheetURL = 'YOUR_GOOGLE_SHEET_URL';
 
-    // Load all data initially
+    // Load data from Google Sheet
     function loadData(query = '') {
+      console.log('Attempting to load data with query:', query);
+      $('#loadingMessage').text('Loading data...');
+      $('#errorMessage').text('');
+      $('#rawData').text('');
+
       $('#dictionaryTable').sheetrock({
         url: sheetURL,
-        query: query || 'select B,C', // Assumes column A is Word, B is Definition
+        query: query || 'select B,C', // Adjusted for Word (B) and Definition (C)
         reset: true,
         callback: function (error, options, response) {
+          $('#loadingMessage').text('');
           if (error) {
-            console.error('Error loading sheet:', error);
-            $('#dictionaryTable').html('<tr><td colspan="2">Error loading data. Check sheet URL or permissions.</td></tr>');
+            console.error('Sheetrock error:', error);
+            $('#errorMessage').text('Error loading data. Check the spreadsheet URL, permissions, or console for details.');
+          } else {
+            console.log('Data loaded successfully:', response);
+            $('#errorMessage').text('');
+            // Display raw data for debugging
+            $('#rawData').text('Raw data (for debugging): ' + JSON.stringify(response, null, 2));
           }
         }
       });
@@ -59,18 +85,18 @@
 
     // Search function
     function searchWords() {
-      const searchTerm = $('#searchInput').val().toLowerCase();
+      const searchTerm = $('#searchInput').val().toLowerCase().trim();
+      console.log('Searching for:', searchTerm);
       if (searchTerm) {
-        // Query Google Sheet for matching words
-        loadData(`select B,C where lower(C) contains '${searchTerm}'`);
+        loadData(`select B,C where lower(B) contains '${searchTerm}'`);
       } else {
-        // Load all data if search is empty
         loadData();
       }
     }
 
     // Initial load
     $(document).ready(function() {
+      console.log('Initializing dictionary...');
       loadData();
     });
   </script>
