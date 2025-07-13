@@ -1,120 +1,78 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>English to Kiswahili Dictionary</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Online Dictionary</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    h1 { text-align: center; }
-    input[type="text"] {
-      width: 100%; padding: 10px; margin: 20px 0;
-      border: 1px solid #ccc; border-radius: 8px;
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
     }
-    .word-card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin: 10px 0;
-      background-color: #f9f9f9;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
     }
-    .word-card h3 {
-      margin: 0 0 5px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .word-card p {
-      margin: 2px 0;
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
     }
-    .alphabet-nav {
-      text-align: center;
-      margin: 10px 0;
-    }
-    .alphabet-nav button {
-      margin: 2px;
-      padding: 6px 10px;
-      border: none;
-      background-color: #ddd;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .alphabet-nav button:hover {
-      background-color: #bbb;
+    th {
+      background-color: #f2f2f2;
     }
   </style>
 </head>
 <body>
   <h1>My Online Dictionary</h1>
+  <input type="text" id="searchInput" placeholder="Search for a word..." onkeyup="searchWords()">
+  <table id="dictionaryTable"></table>
 
-  <input type="text" id="searchBox" placeholder="Search English or Swahili..." />
-
-  <div class="alphabet-nav" id="alphabetNav"></div>
-
-  <div id="wordList"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Tabletop.js/1.5.1/tabletop.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetrock/1.0.0/dist/sheetrock.min.js"></script>
   <script>
-    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSn4lQMRF9BeKFt0_16e8eVd2SsrmcNRKgbsHUHMoXIt-CPq69PZdQPxtGOmlGSMcyHlrlv7P1lNFUw/pubhtml';
+    // Replace with your Google Sheet's published URL
+    const sheetURL = 'YOUR_GOOGLE_SHEET_URL';
 
-    function init() {
-      Tabletop.init({
-        key: sheetURL,
-        callback: showWords,
-        simpleSheet: true
-      });
-    }
-
-    function showWords(data) {
-      const wordList = document.getElementById('wordList');
-      const alphabetNav = document.getElementById('alphabetNav');
-      const searchBox = document.getElementById('searchBox');
-
-      function display(words) {
-        wordList.innerHTML = '';
-        if (words.length === 0) {
-          wordList.innerHTML = '<p>No matches found.</p>';
-          return;
+    // Load all data initially
+    function loadData(query = '') {
+      $('#dictionaryTable').sheetrock({
+        url: sheetURL,
+        query: query || 'select A,B', // Assumes column A is Word, B is Definition
+        reset: true,
+        callback: function (error, options, response) {
+          if (error) {
+            console.error('Error loading sheet:', error);
+            $('#dictionaryTable').html('<tr><td colspan="2">Error loading data. Check sheet URL or permissions.</td></tr>');
+          }
         }
-        words.forEach(row => {
-          const card = document.createElement('div');
-          card.className = 'word-card';
-          card.innerHTML = `
-            <h3>${row["English Word"]}</h3>
-            <p><strong>Swahili:</strong> ${row["Kiswahili Equivalent"]}</p>
-            ${row.Notes ? `<p><em>${row.Notes}</em></p>` : ''}
-          `;
-          wordList.appendChild(card);
-        });
-      }
-
-      const letters = [...new Set(data.map(row => (row["letter"] || '').charAt(0).toUpperCase()))]
-                      .filter(Boolean)
-                      .sort();
-
-      letters.forEach(letter => {
-        const btn = document.createElement('button');
-        btn.textContent = letter;
-        btn.onclick = () => {
-          const filtered = data.filter(row => (row["letter"] || '').toUpperCase() === letter);
-          display(filtered);
-          searchBox.value = '';
-        };
-        alphabetNav.appendChild(btn);
       });
-
-      searchBox.addEventListener('input', function () {
-        const query = this.value.toLowerCase();
-        const filtered = data.filter(row =>
-          (row["English Word"] || '').toLowerCase().includes(query) ||
-          (row["Kiswahili Equivalent"] || '').toLowerCase().includes(query)
-        );
-        display(filtered);
-      });
-
-      display(data);
     }
 
-    window.addEventListener('DOMContentLoaded', init);
+    // Search function
+    function searchWords() {
+      const searchTerm = $('#searchInput').val().toLowerCase();
+      if (searchTerm) {
+        // Query Google Sheet for matching words
+        loadData(`select A,B where lower(A) contains '${searchTerm}'`);
+      } else {
+        // Load all data if search is empty
+        loadData();
+      }
+    }
+
+    // Initial load
+    $(document).ready(function() {
+      loadData();
+    });
   </script>
 </body>
 </html>
