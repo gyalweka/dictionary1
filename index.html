@@ -79,14 +79,15 @@
           const card = document.createElement('div');
           card.className = 'word-card';
           card.innerHTML = `
-            <h3>${row.English}</h3>
-            <p><strong>Swahili:</strong> ${row.Swahili}</p>
+            <h3>${row["English Word"]}</h3>
+            <p><strong>Swahili:</strong> ${row["Kiswahili Equivalent"]}</p>
+            ${row.Notes ? `<p><em>${row.Notes}</em></p>` : ''}
           `;
           wordList.appendChild(card);
         });
       }
 
-      const letters = [...new Set(data.map(row => (row.English || '').charAt(0).toUpperCase()))]
+      const letters = [...new Set(data.map(row => (row["letter"] || '').charAt(0).toUpperCase()))]
                       .filter(Boolean)
                       .sort();
 
@@ -94,7 +95,7 @@
         const btn = document.createElement('button');
         btn.textContent = letter;
         btn.onclick = () => {
-          const filtered = data.filter(row => (row.English || '').charAt(0).toUpperCase() === letter);
+          const filtered = data.filter(row => (row["letter"] || '').toUpperCase() === letter);
           display(filtered);
           searchBox.value = '';
         };
@@ -104,8 +105,8 @@
       searchBox.addEventListener('input', function () {
         const query = this.value.toLowerCase();
         const filtered = data.filter(row =>
-          (row.English || '').toLowerCase().includes(query) ||
-          (row.Swahili || '').toLowerCase().includes(query)
+          (row["English Word"] || '').toLowerCase().includes(query) ||
+          (row["Kiswahili Equivalent"] || '').toLowerCase().includes(query)
         );
         display(filtered);
       });
